@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pocket Arcade</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+color-scheme:dark;--bg:#000;--ink:#f5f5f5;--mut:#8a8a8a;--card:#0b0b0b;--line:#3a3a3a;--amber:#fff;--mint:#fff;--rose:#8a8a8a;--key:#1a1a1a}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--ink:#f5f5f5;--mut:#8a8a8a;--card:#0b0b0b;--line:#3a3a3a;--amber:#fff;--mint:#fff;--rose:#8a8a8a;--key:#1a1a1a}}
+:root[data-theme="dark"]{--bg:#000;--ink:#f5f5f5;--mut:#8a8a8a;--card:#0b0b0b;--line:#3a3a3a;--amber:#fff;--mint:#fff;--rose:#8a8a8a;--key:#1a1a1a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Mono",ui-monospace,Menlo,monospace;min-height:100%}
+main{max-width:560px;margin:0 auto;padding:20px 16px 40px}
+h1{font:800 2rem/1 "Bricolage Grotesque",system-ui,sans-serif;margin:0 0 4px;letter-spacing:-.02em}
+.sub{color:var(--mut);margin:0 0 18px;font-size:.9rem}
+nav{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+nav button,.btn{font:500 .9rem "IBM Plex Mono",monospace;color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:6px;padding:8px 12px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn:hover:not(:disabled){border-color:var(--amber)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:16px}
+/* RPG */
+.stat{display:flex;gap:16px;flex-wrap:wrap;font-size:.85rem;margin-bottom:10px;color:var(--mut)}
+.stat b{color:var(--ink)}
+#log{height:300px;overflow-y:auto;padding-right:6px}
+#log p{margin:0 0 10px}#log p.me{color:var(--amber)}#log p.bad{color:var(--rose)}#log p.good{color:var(--mint)}
+#opts{display:flex;flex-direction:column;gap:8px;margin-top:12px}
+#opts .btn{text-align:left}
+/* Wordle */
+#grid{display:grid;grid-template-rows:repeat(6,1fr);gap:6px;width:min(100%,300px);margin:0 auto 14px}
+.row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.t{aspect-ratio:1;border:2px solid var(--line);display:grid;place-items:center;font:800 1.6rem "Bricolage Grotesque",sans-serif;text-transform:uppercase;border-radius:6px}
+.t.f{border-color:var(--mut)}
+.t.g{background:#fff;border-color:#fff;color:#000;box-shadow:0 0 16px #fff}.t.y{background:transparent;border-color:#fff;color:#fff;box-shadow:0 0 12px #fff,inset 0 0 10px rgba(255,255,255,.6)}.t.x{background:#1c1c1c;border-color:#1c1c1c;color:#6a6a6a}
+#kb{display:flex;flex-direction:column;gap:6px;align-items:center}
+.kr{display:flex;gap:4px;justify-content:center;width:100%}
+.k{flex:1;max-width:38px;height:46px;border:0;border-radius:5px;background:var(--key);color:var(--ink);font:500 .85rem "IBM Plex Mono",monospace;text-transform:uppercase;cursor:pointer;padding:0}
+.k.w{max-width:56px;font-size:.7rem}
+.k.g{background:#fff;color:#000;box-shadow:0 0 10px #fff}.k.y{background:transparent;color:#fff;box-shadow:inset 0 0 0 1.5px #fff,0 0 8px #fff}.k.x{background:#0d0d0d;color:#555}
+#wmsg,#tmsg{min-height:1.6em;text-align:center;margin:0 0 10px}
+/* Typing */
+#prompt{font-size:1.15rem;line-height:1.8;margin-bottom:12px;user-select:none}
+#prompt span.ok{color:#fff;text-shadow:0 0 8px rgba(255,255,255,.8)}#prompt span.no{color:#777;text-decoration:line-through}#prompt span.cur{background:color-mix(in srgb,var(--amber) 40%,transparent)}
+textarea{width:100%;font:inherit;background:var(--bg);color:var(--ink);border:1.5px solid var(--line);border-radius:6px;padding:10px;resize:none}
+.meter{display:flex;justify-content:space-between;margin-bottom:10px;font-size:.9rem}
+h1{text-shadow:0 0 14px rgba(255,255,255,.75)}
+.card{box-shadow:0 0 20px rgba(255,255,255,.12)}
+b{text-shadow:0 0 6px rgba(255,255,255,.6)}
+nav button[aria-selected="true"]{box-shadow:0 0 14px rgba(255,255,255,.7)}
+.btn:hover:not(:disabled){box-shadow:0 0 10px rgba(255,255,255,.6)}
+.t.f{box-shadow:0 0 8px rgba(255,255,255,.35)}
+#log p.me,#log p.good{text-shadow:0 0 8px rgba(255,255,255,.5)}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tools label{display:flex;gap:6px;align-items:center;font-size:.85rem;color:var(--mut);cursor:pointer}
+#prompt.hide{filter:blur(7px)}
+@media(prefers-reduced-motion:no-preference){.t{transition:background .25s}}
+</style>
+</head>
+<body>
+<main>
+<h1>Pocket Arcade</h1>
+<p class="sub">Three small games. Pick one and play.</p>
+<nav role="tablist">
+<button role="tab" aria-selected="true" data-t="rpg">Story RPG</button>
+<button role="tab" aria-selected="false" data-t="wd">Five Letters</button>
+<button role="tab" aria-selected="false" data-t="ty">Type Sprint</button>
+</nav>
+
+<section id="rpg" class="on card">
+<div class="stat"><span>HP <b id="hp"></b></span><span>Lv <b id="lv"></b></span><span>XP <b id="xp"></b></span><span>Gold <b id="gold"></b></span><span>Pack <b id="inv"></b></span></div>
+<div id="log" aria-live="polite"></div>
+<div id="opts"></div>
+</section>
+
+<section id="wd">
+<div id="wmsg"></div>
+<div id="grid"></div>
+<div id="kb"></div>
+<p style="text-align:center;margin-top:14px"><button class="btn" id="wnew">New word</button></p>
+</section>
+
+<section id="ty" class="card">
+<div class="meter"><span>Time <b id="tt">30</b>s</span><span>WPM <b id="wpm">0</b></span><span>Accuracy <b id="acc">100</b>%</span></div>
+<div id="prompt"></div>
+<textarea id="inp" rows="2" placeholder="Start typing to begin the clock" autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
+<p id="tmsg"></p>
+<div class="tools">
+<button class="btn" id="tnew">New round</button>
+<button class="btn" id="tdict">Dictate</button>
+<label><input type="checkbox" id="thide"> Hide text</label>
+</div>
+</section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const rnd=n=>Math.floor(Math.random()*n);
+let tab="rpg";
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  tab=b.dataset.t;
+  document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x===b));
+  document.querySelectorAll("section").forEach(x=>x.classList.toggle("on",x.id===tab));
+});
+
+/* ---------- RPG ---------- */
+const W=["sword","harpoon","ice axe"],A=["shield","furs"];
+const ST={
+hollow:{n:"Old Hollow",b:"A ruined manor and the crypt beneath it.",s:"gate",S:{
+gate:{t:"Rain ticks on the iron gate of Old Hollow. Ivy hangs thick over the wall, and beyond it a dark hall waits.",
+ c:[{t:"Search the ivy",once:"ivy",give:"rusty key",msg:"Behind the leaves your fingers find a rusty key.",go:"gate",quiet:1},{t:"Step into the hall",go:"hall"}]},
+hall:{t:"A cold hall. A stair leads down to the cellar, a door opens on the library, and an iron door stands at the far end.",
+ c:[{t:"Go down to the cellar",go:"cellar"},{t:"Enter the library",go:"lib"},{t:"Unlock the iron door",need:"rusty key",go:"vault"},{t:"Back to the gate",go:"gate"}]},
+cellar:{t:"Barrels, damp straw, and a goblin chewing on something it shouldn’t. In the floor sits a rusted trapdoor.",back:"hall",
+ fight:{n:"goblin",hp:7,atk:3,gold:5,xp:6,after:"The goblin drops. A few coins glint in the straw."},
+ c:[{t:"Pry open the trapdoor",need:"lantern",go:"crypt"},{t:"Climb back up",go:"hall"}]},
+lib:{t:"Shelves lean under rotting books. A sword hangs above the reading desk. A tonic and a brass lantern sit on the desk.",
+ c:[{t:"Take the sword",once:"sw",give:"sword",msg:"The blade is old but balanced. Attacks hit harder.",go:"lib",quiet:1},{t:"Drink the tonic",once:"tn",heal:6,msg:"Warmth spreads through you.",go:"lib",quiet:1},{t:"Take the lantern",once:"ln",give:"lantern",msg:"The lantern is half full of oil and still lights.",go:"lib",quiet:1},{t:"Return to the hall",go:"hall"}]},
+crypt:{t:"Your lantern shows rows of stone shelves. Something dry and bony rattles upright.",back:"cellar",
+ fight:{n:"skeleton",hp:9,atk:3,gold:8,xp:8,after:"The skeleton clatters apart into a heap of bones."},
+ c:[{t:"Take the bone-plated shield",once:"sh",give:"shield",msg:"The shield is heavy but sturdy. Enemy hits hurt less.",go:"crypt",quiet:1},{t:"Follow the tunnel",go:"spring"},{t:"Climb back to the cellar",go:"cellar"}]},
+spring:{t:"The tunnel ends at a cold spring under a crack of moonlight. Carved above it: “Rest, then climb.”",
+ c:[{t:"Drink from the spring",once:"sp",heal:8,msg:"The water is icy and clean.",go:"spring",quiet:1},{t:"Go back to the crypt",go:"crypt"}]},
+vault:{t:"The iron door groans open on a round chamber. A Stone Warden rises from its pedestal.",back:"hall",
+ fight:{n:"Stone Warden",hp:16,atk:4,gold:20,xp:20,end:1,after:"The Warden crumbles to gravel. Behind it sits a chest of old gold."},c:[]}
+}},
+light:{n:"The Drowned Lighthouse",b:"Tide, wreckage, and a lamp that will not go out.",s:"shore",S:{
+shore:{t:"Low tide at Gull Rock. A lighthouse stands at the end of a causeway, its lamp burning though no keeper has been seen for years.",
+ c:[{t:"Search the wreckage",once:"wr",give:"harpoon",msg:"A rusted harpoon is still wedged in the hull. Attacks hit harder.",go:"shore",quiet:1},{t:"Walk the causeway",go:"base"}]},
+base:{t:"Seawater laps at the lighthouse door. A cottage leans against the wall, and a spiral stair climbs inside the tower.",back:"shore",
+ fight:{n:"giant crab",hp:7,atk:3,gold:3,xp:6,after:"The crab flips onto its back and goes still."},
+ c:[{t:"Enter the keeper’s cottage",go:"cottage"},{t:"Climb the spiral stair",need:"keeper’s key",go:"stairs"},{t:"Return to the shore",go:"shore"}]},
+cottage:{t:"A table set for one. A logbook lies open beside a bowl of cold stew.",
+ c:[{t:"Read the logbook",once:"lg",xp:4,msg:"The last entry reads: “The light must never go out. Something wants it dark.”",go:"cottage",quiet:1},{t:"Take the keeper’s key",once:"ky",give:"keeper’s key",msg:"The key hangs on a nail by the door.",go:"cottage",quiet:1},{t:"Eat the stew",once:"st",hurt:2,msg:"It was not fresh.",go:"cottage",quiet:1},{t:"Step outside",go:"base"}]},
+stairs:{t:"Halfway up, the walls weep seawater. A drowned sailor drags itself toward you.",back:"base",
+ fight:{n:"drowned sailor",hp:10,atk:4,gold:6,xp:9,after:"The sailor slumps and dissolves into brine."},
+ c:[{t:"Rest by the landing window",once:"rs",heal:6,msg:"Cold air and a quiet minute help.",go:"stairs",quiet:1},{t:"Climb to the lamp room",go:"lamp"},{t:"Go back down",go:"base"}]},
+lamp:{t:"The lamp room hums with a pale light. A shape of black water coils around the lens: the Tide Wraith.",back:"stairs",
+ fight:{n:"Tide Wraith",hp:18,atk:5,gold:25,xp:22,end:1,after:"The Wraith breaks apart and drains through the floor. The lamp burns steady again."},c:[]}
+}},
+pass:{n:"Frostpine Pass",b:"A blizzard trail, a hermit, and something huge above.",s:"camp",S:{
+camp:{t:"Snow, a dying fire, and a trail that climbs into the pines. Someone left a heap of old furs by the flames.",
+ c:[{t:"Warm yourself at the fire",once:"fi",heal:4,msg:"Feeling returns to your fingers.",go:"camp",quiet:1},{t:"Pull on the old furs",once:"fu",give:"furs",msg:"The furs are thick. Enemy hits hurt less.",go:"camp",quiet:1},{t:"Follow the trail",go:"trail"}]},
+trail:{t:"Yellow eyes in the snow. A winter wolf circles you.",back:"camp",
+ fight:{n:"winter wolf",hp:8,atk:3,gold:2,xp:7,after:"The wolf flees limping into the trees."},
+ c:[{t:"Follow the ridge",go:"ridge"},{t:"Enter the cave",go:"cave"},{t:"Return to camp",go:"camp"}]},
+cave:{t:"A hermit tends a smoky fire. He studies you and nods.",
+ c:[{t:"Ask about the summit",once:"hq",xp:4,msg:"“The Yeti nests above the ice wall. You will need an axe to climb it.”",go:"cave",quiet:1},{t:"Take the hermit’s ice axe",once:"ax",give:"ice axe",msg:"He hands it over. Attacks hit harder.",go:"cave",quiet:1},{t:"Share his stew",once:"sw",heal:7,msg:"It is thick and hot.",go:"cave",quiet:1},{t:"Leave the cave",go:"trail"}]},
+ridge:{t:"The ridge ends at a steep snowfield. Beyond it a rope bridge sways over a chasm.",
+ c:[{t:"Cross the snowfield carefully",once:"cr",hurt:2,msg:"You slip once but find a safe line.",go:"bridge"},{t:"Cross along your tracks",req:"cr",go:"bridge"},{t:"Back to the trail",go:"trail"}]},
+bridge:{t:"A frost spider the size of a cart waits on the bridge.",back:"ridge",
+ fight:{n:"frost spider",hp:11,atk:4,gold:8,xp:10,after:"The spider curls up and the bridge stops swaying."},
+ c:[{t:"Climb the ice wall",need:"ice axe",go:"summit"},{t:"Go back to the ridge",go:"ridge"}]},
+summit:{t:"Wind howls across the summit. A white shape rises from a nest of bones: the Yeti.",back:"bridge",
+ fight:{n:"Yeti",hp:20,atk:5,gold:30,xp:22,end:1,after:"The Yeti roars once and topples. The pass is safe, and the nest is full of treasure."},c:[]}
+}}
+};
+let g=null;
+const SC=()=>ST[g.k].S[g.scene];
+const need=()=>g.lvl*8;
+function say(x,c){const p=document.createElement("p");p.textContent=x;if(c)p.className=c;const l=$("#log");l.appendChild(p);l.scrollTop=l.scrollHeight}
+function btn(t,fn,dis){const b=document.createElement("button");b.className="btn";b.textContent=t;b.disabled=!!dis;b.onclick=fn;$("#opts").appendChild(b)}
+function stats(){
+  const d=g||{hp:0,max:0,lvl:1,xp:0,gold:0,items:[]};
+  $("#hp").textContent=Math.max(0,d.hp)+"/"+d.max;$("#lv").textContent=d.lvl;
+  $("#xp").textContent=d.xp+"/"+d.lvl*8;$("#gold").textContent=d.gold;$("#inv").textContent=d.items.join(", ")||"empty";
+}
+function menu(){
+  g=null;$("#log").innerHTML="";$("#opts").innerHTML="";
+  say("Choose a story. Each has its own map, loot and final boss. Win fights to gain levels.");
+  Object.keys(ST).forEach(k=>btn(ST[k].n+": "+ST[k].b,()=>start(k)));stats();
+}
+function start(k){g={k,hp:12,max:12,lvl:1,xp:0,gold:0,items:[],done:{},foe:null,scene:ST[k].s,end:0};$("#log").innerHTML="";say(ST[k].n,"me");enter(g.scene)}
+function enter(id){
+  g.scene=id;const sc=SC();say(sc.t);
+  if(sc.fight&&!g.done[id]){g.foe={...sc.fight};say("Draw steel. A "+g.foe.n+" stands in your way.","bad")}
+  else if(sc.fight)say("The "+sc.fight.n+" is already beaten.");
+  draw();
+}
+function draw(){
+  stats();$("#opts").innerHTML="";const sc=SC();
+  if(g.hp<=0){say("You collapse. The story ends here, for now.","bad");btn("Try again",()=>start(g.k));btn("Choose a story",menu);return}
+  if(g.end){btn("Choose a story",menu);return}
+  if(g.foe){btn("Attack",attack);btn("Retreat",()=>{g.foe=null;say("You back away and the fight resets.");enter(sc.back)});return}
+  sc.c.forEach(c=>{
+    if(c.once&&g.done[c.once])return;
+    if(c.req&&!g.done[c.req])return;
+    const locked=c.need&&!g.items.includes(c.need);
+    btn(locked?c.t+" (missing item)":c.t,()=>pick(c),locked);
+  });
+}
+function levelUp(){
+  while(g.xp>=need()){g.xp-=need();g.lvl++;g.max+=3;g.hp=Math.min(g.max,g.hp+5);
+    say("Level up. You are now level "+g.lvl+" with "+g.max+" max HP.","good")}
+}
+function pick(c){
+  say("> "+c.t,"me");
+  if(c.once)g.done[c.once]=1;
+  if(c.give)g.items.push(c.give);
+  if(c.heal)g.hp=Math.min(g.max,g.hp+c.heal);
+  if(c.hurt)g.hp-=c.hurt;
+  if(c.msg)say(c.msg,c.hurt?"bad":"good");
+  if(c.xp){g.xp+=c.xp;levelUp()}
+  if(c.quiet)draw();else enter(c.go);
+}
+function attack(){
+  const f=g.foe;
+  const d=1+rnd(6)+(W.some(w=>g.items.includes(w))?2:0)+(g.lvl-1);f.hp-=d;
+  say("You hit the "+f.n+" for "+d+".","good");
+  if(f.hp<=0){say(f.after,"good");g.gold+=f.gold;g.xp+=f.xp;g.done[g.scene]=1;g.foe=null;levelUp();
+    if(f.end){say("You finish "+ST[g.k].n+" at level "+g.lvl+" with "+g.gold+" gold. The end.","good");g.end=1}
+    draw();return}
+  const h=Math.max(1,1+rnd(f.atk)-(A.some(a=>g.items.includes(a))?1:0));g.hp-=h;
+  say("The "+f.n+" strikes you for "+h+".","bad");draw();
+}
+
+/* ---------- Wordle ---------- */
+const WORDS="apple brave crane dwell eagle flint grape house ivory joker knife lemon mango night ocean pearl quilt raven stone tiger ultra vivid waltz yacht zebra amber blaze charm drift ember frost glide haste input jolly koala light march noble oasis plumb quest ridge shine trail unity vapor wheat young blush climb dream earth fable giant heart image jewel karma lunar maple nerve orbit pride quiet river spark thorn urban vault wagon pilot candy robot salad table music cloud smile green sweet grass sugar paper snake water bread chair clock dance eight fruit horse juice lucky magic pizza queen rainy shirt toast uncle voice whale".split(" ");
+let ans,gr,cur,over;
+const KB=["qwertyuiop","asdfghjkl","+zxcvbnm-"];
+function wBuild(){
+  const G=$("#grid");G.innerHTML="";
+  for(let r=0;r<6;r++){const d=document.createElement("div");d.className="row";for(let c=0;c<5;c++){const t=document.createElement("div");t.className="t";d.appendChild(t)}G.appendChild(d)}
+  const K=$("#kb");K.innerHTML="";
+  KB.forEach(row=>{const d=document.createElement("div");d.className="kr";
+    [...row].forEach(ch=>{const b=document.createElement("button");b.className="k";
+      if(ch=="+"){b.textContent="enter";b.classList.add("w");b.onclick=()=>wKey("Enter")}
+      else if(ch=="-"){b.textContent="del";b.classList.add("w");b.onclick=()=>wKey("Backspace")}
+      else{b.textContent=ch;b.id="k"+ch;b.onclick=()=>wKey(ch)}
+      d.appendChild(b)});K.appendChild(d)});
+}
+function wNew(){ans=WORDS[rnd(WORDS.length)];gr=[];cur="";over=false;$("#wmsg").textContent="Guess the five-letter word.";wBuild()}
+function wDraw(){
+  const rows=[...$("#grid").children];
+  rows.forEach((row,i)=>[...row.children].forEach((t,j)=>{
+    const w=i<gr.length?gr[i].w:(i===gr.length?cur:"");
+    t.textContent=w[j]||"";t.className="t"+(i<gr.length?" "+gr[i].s[j]:(w[j]?" f":""));
+  }));
+}
+function score(w){
+  const s=Array(5).fill("x"),n={};
+  for(let i=0;i<5;i++){if(w[i]==ans[i])s[i]="g";else n[ans[i]]=(n[ans[i]]||0)+1}
+  for(let i=0;i<5;i++)if(s[i]!="g"&&n[w[i]]>0){s[i]="y";n[w[i]]--}
+  return s;
+}
+function wKey(k){
+  if(over)return;
+  if(k=="Backspace")cur=cur.slice(0,-1);
+  else if(k=="Enter"){
+    if(cur.length<5){$("#wmsg").textContent="Need five letters.";return}
+    const s=score(cur);gr.push({w:cur,s});
+    [...cur].forEach((ch,i)=>{const e=$("#k"+ch);if(!e)return;
+      const rank={x:1,y:2,g:3},old=e.dataset.r|0;
+      if(rank[s[i]]>old){e.dataset.r=rank[s[i]];e.className="k "+s[i]}});
+    if(cur==ans){over=true;$("#wmsg").textContent="Solved in "+gr.length+" of 6."}
+    else if(gr.length==6){over=true;$("#wmsg").textContent="Out of guesses. The word was "+ans+"."}
+    else $("#wmsg").textContent="";
+    cur="";
+  }else if(/^[a-z]$/.test(k)&&cur.length<5)cur+=k;
+  wDraw();
+}
+document.addEventListener("keydown",e=>{
+  if(tab!="wd"||e.ctrlKey||e.metaKey||e.altKey)return;
+  if(e.target.closest&&e.target.closest("nav"))return;
+  wKey(e.key.length==1?e.key.toLowerCase():e.key);
+});
+$("#wnew").onclick=()=>{wNew();wDraw()};
+
+/* ---------- Typing ---------- */
+const TXT=["The quick brown fox jumps over the lazy dog while the rain keeps falling.","Good habits are built one small repetition at a time, so keep your fingers moving.","A calm mind and steady hands will beat a fast start and a sloppy finish.","Every journey begins with a single step, and every sentence begins with one letter.","Practice does not make perfect, but careful practice makes steady progress."];
+let target,t0,timer,left,running;
+function tSetup(){
+  clearInterval(timer);running=false;left=30;t0=0;if(window.speechSynthesis)speechSynthesis.cancel();$("#tdict")&&($("#tdict").textContent="Dictate");
+  target=(TXT[rnd(TXT.length)]+" "+TXT[rnd(TXT.length)]);
+  $("#inp").value="";$("#inp").disabled=false;$("#tt").textContent=30;$("#wpm").textContent=0;$("#acc").textContent=100;
+  $("#tmsg").textContent="";tPaint("");
+}
+function tPaint(v){
+  const p=$("#prompt");p.innerHTML="";
+  [...target].forEach((ch,i)=>{const s=document.createElement("span");s.textContent=ch;
+    if(i<v.length)s.className=v[i]==ch?"ok":"no";else if(i==v.length)s.className="cur";p.appendChild(s)});
+}
+function tStats(v){
+  let ok=0;for(let i=0;i<v.length;i++)if(v[i]==target[i])ok++;
+  const mins=Math.max((Date.now()-t0)/60000,1/600);
+  $("#wpm").textContent=Math.round(ok/5/mins);
+  $("#acc").textContent=v.length?Math.round(ok/v.length*100):100;
+}
+function tEnd(){
+  clearInterval(timer);running=false;$("#inp").disabled=true;
+  $("#tmsg").textContent="Time’s up. You typed at "+$("#wpm").textContent+" WPM with "+$("#acc").textContent+"% accuracy.";
+}
+$("#inp").addEventListener("input",e=>{
+  const v=e.target.value;
+  if(!running&&v.length){running=true;t0=Date.now();
+    timer=setInterval(()=>{left--;$("#tt").textContent=left;tStats($("#inp").value);if(left<=0)tEnd()},1000)}
+  tPaint(v);tStats(v);
+  if(v.length>=target.length)tEnd();
+});
+$("#tnew").onclick=tSetup;
+const dBtn=$("#tdict");
+if(!window.speechSynthesis){dBtn.disabled=true;dBtn.title="Speech is not supported in this browser"}
+dBtn.onclick=()=>{
+  if(speechSynthesis.speaking){speechSynthesis.cancel();dBtn.textContent="Dictate";return}
+  const u=new SpeechSynthesisUtterance(target);u.lang="en-US";u.rate=.9;
+  u.onend=u.onerror=()=>{dBtn.textContent="Dictate"};
+  dBtn.textContent="Stop";speechSynthesis.speak(u);$("#inp").focus();
+};
+$("#thide").onchange=e=>$("#prompt").classList.toggle("hide",e.target.checked);
+
+menu();wNew();wDraw();tSetup();
+</script>
+</body>
+</html>
